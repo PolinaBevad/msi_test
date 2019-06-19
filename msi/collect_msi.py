@@ -1,5 +1,5 @@
 from msi.fastareader import FastaReader
-from msi.fastareader import Reference
+from msi.config import Config
 from msi.bamreader import BamReader
 
 
@@ -31,6 +31,7 @@ def extend_kmers(kmers, reference):
         kmer_len = len(kmers[kmer])
         extended = reference.reference_sequence[kmer - extension:kmer + kmer_len + extension].lower()
         possible_kmers = []
+        # TODO: add kmers that can be more then initial
         for i in range(kmer_len + 1):
             new_kmer = extended[:extension] + extended[5:kmer_len + extension - i] + extended[kmer_len + extension:]
             possible_kmers.append(new_kmer)
@@ -45,8 +46,13 @@ def get_sites_from_bam(bam_path, reference, extended_kmers):
         reads = bam.fetch(reference.chr, reference.start + position, reference.start + position + 50)
         kmers = {}
         for read in reads:
+            if bad_read(read):
+                continue
             for kmer in extended_kmers[position]:
-                if kmer.lower() in read.query_alignment_sequence.lower():
+                index = read.query_alignment_sequence.lower().find(kmer.lower())
+                if index > 0:
+                    if read.query_qualities[index] < Config.baseq:
+                        continue
                     if kmer in kmers:
                         kmers[kmer] += 1
                     else:
@@ -61,6 +67,16 @@ def compare_possible_msi(normal, tumor):
     msi = {}
     for pos in tumor:
         for kmer in tumor[pos]:
-            if kmer not in normal[pos]:
+            if kmer not in normal[pos] and tumor[pos][kmer] > Config.mincov:
                 msi[pos] = (kmer, tumor[pos][kmer])
     return msi
+
+
+# Read doesn't fit criteria for quality
+def bad_read(read):
+    if read.mapping_quality < Config.mapq:
+        return True
+    if read.is_supplementary:
+        return True
+
+    return False
