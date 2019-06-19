@@ -1,0 +1,5 @@
+venv/*
+.pytest_cache/*
+MSI.egg-info/*
+.idea/*
+Pipfile.lock

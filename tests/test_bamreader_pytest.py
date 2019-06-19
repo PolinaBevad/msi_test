@@ -43,6 +43,7 @@ def test_collect_fasta_sites():
         collect_fasta_sites(kmers, fasta_path, exon)
 
 
+# TODO: split to unit tests
 def test_collect_exome_chr7_fasta_sites():
     bed_path = '../data/bed_bam_test/panel_az600_chr7.bed'
     exons = BedReader(bed_path).exonList
