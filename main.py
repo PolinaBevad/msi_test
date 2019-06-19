@@ -8,11 +8,12 @@ from msi.kmers import Kmers
 from msi.bedreader import BedReader
 from msi.config import Config
 import argparse
+import logging
 
 
-#TODO: add logger
 def main():
     config = parse_config()
+    set_logging(config)
     exons = BedReader(config.bed).exonList
 
     kmers = Kmers().kmers
@@ -22,7 +23,7 @@ def main():
         extended_kmers = extend_kmers(position_to_kmer, reference)
         possible_msi_tumor = get_sites_from_bam(config.tumor, reference, extended_kmers)
         possible_msi_normal = get_sites_from_bam(config.normal, reference, extended_kmers)
-        msi = compare_possible_msi(possible_msi_normal, possible_msi_tumor)
+        msi = compare_possible_msi(possible_msi_normal, possible_msi_tumor, reference)
         if len(msi) > 0:
             msis.append(msi)
     print(msis)
@@ -33,14 +34,16 @@ def parse_config():
     required = parser.add_argument_group("required")
     optional = parser.add_argument_group("optional")
     optional.add_argument('--freq', type=float,
-                        help="Minimum difference of frequencies for base to consider site as somatic. "
-                             "Default: 5%% (0.05)")
+                          help="Minimum difference of frequencies for base to consider site as somatic. "
+                               "Default: 5%% (0.05)")
     optional.add_argument('--mapq', type=float, help="Minimum read mapping quality. Default: 10.0")
     optional.add_argument('--baseq', type=int, help="Minimum base quiality. Default: 25")
     optional.add_argument('--mincov', type=int,
-                        help="Minimum coverage of base for nucleotide to be considered as somatic. "
-                             "Default: 2")
+                          help="Minimum coverage of base for nucleotide to be considered as somatic. "
+                               "Default: 2")
     optional.add_argument('--th', type=int, help="Number of threads for multiprocessing mode. Default: 1")
+    optional.add_argument('--log', type=str, help="The level of logging from CRITICAL, ERROR, WARNING, INFO, DEBUG. "
+                                                  "Default: WARNING")
     required.add_argument('--normal', required=True, type=str, help="Path to normal SAM/BAM/CRAM file.")
     required.add_argument('--tumor', required=True, type=str, help="Path to tumor SAM/BAM/CRAM file.")
     required.add_argument('--bed', required=True, type=str, help="Path to BED file.")
@@ -48,6 +51,16 @@ def parse_config():
 
     args = parser.parse_args()
     return Config(args)
+
+
+def set_logging(config):
+    log_level = getattr(logging, Config.log_level.upper(), None)
+    if not isinstance(log_level, int):
+        raise ValueError('Invalid log level: %s' % log_level)
+    logging.basicConfig(filename='msi.log', level=log_level, filemode='w',
+                        format='%(asctime)s %(levelname)s:%(message)s ')
+    logging.info("Starting MSI.")
+    logging.info("Retrieving exongs from %s.", config.bed)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ class FastaReader:
         fasta_file = pysam.FastaFile(path)
         start = exon.start - FastaReader.EXTENSION if exon.start > FastaReader.EXTENSION else exon.start
         end = exon.end + FastaReader.EXTENSION \
-            if fasta_file.get_reference_length(exon.chr) < exon.end + FastaReader.EXTENSION else exon.end
+            if fasta_file.get_reference_length(exon.chr) > exon.end + FastaReader.EXTENSION else exon.end
         reference = fasta_file.fetch(exon.chr, start, end)
 
         return Reference(reference, exon.chr, start, end)

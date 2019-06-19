@@ -7,6 +7,7 @@ class Config:
     baseq = 25
     mincov = 2
     th = 1
+    log_level = 'WARNING'
 
     @staticmethod
     def set_config(args):
@@ -20,6 +21,8 @@ class Config:
             Config.mincov = args.mincov
         if args.th:
             Config.th = args.th
+        if args.log:
+            Config.log_level = args.log
 
     def __init__(self, args):
         self.normal = args.normal
